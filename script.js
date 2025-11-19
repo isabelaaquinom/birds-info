@@ -1,14 +1,6 @@
-/* ---------------------------
-   CONFIG
---------------------------- */
 const EBIRD_API_KEY = "lel5qn20tf0m";
-// ... no início do script.js
-const loadingSpinner = document.getElementById("loading-spinner"); // <-- NOVO: Referência ao spinner
-// ...
+const loadingSpinner = document.getElementById("loading-spinner");
 
-/* ---------------------------
-   MENU SANDUÍCHE
---------------------------- */
 const menuBtn = document.getElementById("menu-btn");
 const sidebar = document.getElementById("sidebar");
 
@@ -16,7 +8,6 @@ menuBtn.addEventListener("click", () => {
     sidebar.style.left = sidebar.style.left === "0px" ? "-260px" : "0px";
 });
 
-/* Expandir submenu */
 const submenuToggle = document.querySelector(".submenu-toggle");
 const submenu = document.querySelector(".submenu");
 
@@ -24,10 +15,6 @@ submenuToggle.addEventListener("click", () => {
     submenu.style.display = submenu.style.display === "block" ? "none" : "block";
 });
 
-
-/* ---------------------------
-   NAVEGAÇÃO ENTRE SEÇÕES
---------------------------- */
 const inicioSection = document.getElementById("inicio-section");
 const birdsSection = document.getElementById("birds-section");
 
@@ -37,28 +24,19 @@ document.querySelector("[data-section='inicio']").addEventListener("click", () =
     sidebar.style.left = "-260px";
 });
 
-/* ---------------------------
-   PROCESSAR LISTA DE AVES (COM TRADUÇÃO)
---------------------------- */
 async function processBirds(birds) {
     const translationPromises = birds.map(async (bird) => {
-        // Traduz o nome comum
         const translatedName = await translate(bird.comName);
         
         return {
-            name: translatedName, // Nome comum traduzido
+            name: translatedName,
             scientific: bird.sciName,
-            // A imagem será carregada depois
-            // As outras propriedades da API eBird não são necessárias aqui
         };
     });
 
     return await Promise.all(translationPromises);
 }
 
-/* ---------------------------
-   FUNÇÃO: BUSCAR AVES POR REGIÃO
---------------------------- */
 async function getBirdsFromRegion(regionCode) {
     const url = `https://api.ebird.org/v2/data/obs/${regionCode}/recent`;
 
@@ -69,10 +47,6 @@ async function getBirdsFromRegion(regionCode) {
     return await response.json();
 }
 
-
-/* ---------------------------
-   BUSCAR FOTOS NO iNATURALIST
---------------------------- */
 async function getBirdImage(scientificName) {
     const url = `https://api.inaturalist.org/v1/search?q=${encodeURIComponent(scientificName)}&sources=taxa`;
 
@@ -91,16 +65,12 @@ async function getBirdImage(scientificName) {
     return "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
 }
 
-
-/* ---------------------------
-   CRIAR CARD
---------------------------- */
 function createBirdCard(bird) {
     const container = document.getElementById("birds");
 
     const card = document.createElement("div");
     card.classList.add("card");
-    card.style.cursor = "pointer"; // mostra o dedinho
+    card.style.cursor = "pointer";
 
     card.innerHTML = `
         <img src="${bird.image}" alt="${bird.name}">
@@ -108,19 +78,11 @@ function createBirdCard(bird) {
         <p>${bird.scientific}</p>
     `;
 
-    // ABRIR MODAL AO CLICAR
     card.addEventListener("click", () => openModal(bird));
 
     container.appendChild(card);
 }
 
-
-/* ---------------------------
-   CARREGAR LISTA DE AVES
---------------------------- */
-/* ---------------------------
-   CARREGAR LISTA DE AVES
---------------------------- */
 async function loadBirds(regionCode, regionName) {
     inicioSection.style.display = "none";
     birdsSection.style.display = "block";
@@ -133,13 +95,11 @@ async function loadBirds(regionCode, regionName) {
     try {
         const rawBirds = await getBirdsFromRegion(regionCode);
 
-        // NOVO: Traduz os nomes comuns das aves (Passo 1)
         const translatedBirds = await processBirds(rawBirds);
         
         const birdsWithImage = [];
         const birdsWithoutImage = [];
         
-        // Carregar imagens em paralelo (Passo 2)
         const imagePromises = translatedBirds.map(bird => getBirdImage(bird.scientific));
         const images = await Promise.all(imagePromises);
 
@@ -148,12 +108,11 @@ async function loadBirds(regionCode, regionName) {
             const image = images[i];
             
             const birdData = {
-                name: bird.name, // Nome já traduzido
+                name: bird.name,
                 scientific: bird.scientific,
                 image
             };
 
-            // Verifica se a imagem é o placeholder
             if (image.includes("No-Image-Placeholder.svg")) {
                 birdsWithoutImage.push(birdData);
             } else {
@@ -161,10 +120,8 @@ async function loadBirds(regionCode, regionName) {
             }
         }
         
-        // Concatena: primeiro as com foto, depois as sem foto
         const sortedBirds = [...birdsWithImage, ...birdsWithoutImage];
 
-        // Cria os cards na ordem priorizada
         for (const bird of sortedBirds) {
             createBirdCard(bird);
         }
@@ -177,10 +134,6 @@ async function loadBirds(regionCode, regionName) {
     }
 }
 
-
-/* ---------------------------
-   MAPA DE CONTINENTES
---------------------------- */
 const continentMap = {
     "br": { region: "BR", name: "América do Sul" },
     "eu": { region: "GR", name: "Europa" },
@@ -199,10 +152,6 @@ document.querySelectorAll(".submenu li").forEach(li => {
     });
 });
 
-
-/* ---------------------------
-   BUSCAR POR NOME
---------------------------- */
 document.getElementById("searchBtn").addEventListener("click", async () => {
     const inputName = document.getElementById("searchInput").value.trim();
     if (!inputName) return;
@@ -210,15 +159,13 @@ document.getElementById("searchBtn").addEventListener("click", async () => {
     inicioSection.style.display = "none";
     birdsSection.style.display = "block";
     
-    // NOVO: Exibe o termo de busca original do usuário
     document.getElementById("region-title").innerText = `Resultados para: ${inputName}`;
 
     const container = document.getElementById("birds");
     container.innerHTML = "";
-    loadingSpinner.classList.remove("hidden"); // Assume que você adicionou o loadingSpinner
+    loadingSpinner.classList.remove("hidden");
 
     try {
-        // PASSO 1: TRADUZIR O TERMO DE BUSCA DO USUÁRIO (Português -> Inglês)
         const searchTerm = await translate(inputName, 'pt|en');
         
         const url = `https://api.ebird.org/v2/ref/taxonomy/ebird?fmt=json`;
@@ -227,7 +174,6 @@ document.getElementById("searchBtn").addEventListener("click", async () => {
         });
         const data = await response.json();
 
-        // PASSO 2: FILTRAGEM: Usa o termo de busca traduzido (searchTerm)
         const filtered = data.filter(item =>
             item.comName.toLowerCase().includes(searchTerm.toLowerCase())
         );
@@ -235,9 +181,7 @@ document.getElementById("searchBtn").addEventListener("click", async () => {
         const birdsWithImage = [];
         const birdsWithoutImage = [];
 
-        // PASSO 3: PROCESSAMENTO, IMAGEM E TRADUÇÃO DE VOLTA PARA PORTUGUÊS
         const birdPromises = filtered.map(async (bird) => {
-            // Traduz o nome da ave de volta para Português ('en|pt')
             const translatedName = await translate(bird.comName, 'en|pt');
             const image = await getBirdImage(bird.sciName);
             
@@ -250,7 +194,6 @@ document.getElementById("searchBtn").addEventListener("click", async () => {
         
         const processedBirds = await Promise.all(birdPromises);
 
-        // PASSO 4: ORDENAÇÃO E CRIAÇÃO DOS CARDS
         for (const bird of processedBirds) {
             if (bird.image.includes("No-Image-Placeholder.svg")) {
                 birdsWithoutImage.push(bird);
@@ -273,12 +216,6 @@ document.getElementById("searchBtn").addEventListener("click", async () => {
     }
 });
 
-
-/* ========================================================================
-   MODAL COMPLETO (CORRIGIDO)
-======================================================================== */
-
-// Criar modal dinamicamente
 const modal = document.createElement("div");
 modal.id = "modal";
 modal.style.display = "none";
@@ -295,18 +232,14 @@ modal.innerHTML = `
 
 document.body.appendChild(modal);
 
-
-// TRADUTOR
 async function translate(text, langPair = 'en|pt') {
     const [sourceLang, targetLang] = langPair.split('|');
-    // Usamos 'auto' para a tradução de nomes longos e o par específico para o termo de busca.
     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
 
     try {
         const response = await fetch(url);
         const data = await response.json();
 
-        // O endpoint do Google retorna um array complexo.
         if (data && data[0] && data[0][0] && data[0][0][0]) {
             return data[0][0][0];
         }
@@ -314,15 +247,9 @@ async function translate(text, langPair = 'en|pt') {
         console.error(`Erro na tradução (${langPair}):`, e);
     }
     
-    // Retorna o texto original como fallback seguro
     return text;
 }
 
-
-/* ---------------------------
-   FUNÇÃO: DESCRIÇÃO VIA WIKIPEDIA
-   (Garante que a descrição longa não quebre a requisição)
---------------------------- */
 async function getBirdDescription(scientificName) {
     const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(scientificName)}`;
 
@@ -333,12 +260,10 @@ async function getBirdDescription(scientificName) {
         if (data.extract) {
             let description = data.extract;
             
-            // Limita o tamanho do texto para garantir que o endpoint do Google não seja sobrecarregado (embora o limite seja maior)
-            if (description.length > 5000) { // Um limite mais generoso
+            if (description.length > 5000) {
                  description = description.substring(0, 5000) + " [...] (Descrição completa na Wikipedia)";
             }
             
-            // Tenta traduzir. A função translate agora tem o fallback para inglês embutido.
             return await translate(description);
         }
     } catch (e) {
@@ -348,58 +273,41 @@ async function getBirdDescription(scientificName) {
     return "Sem descrição disponível.";
 }
 
-
-// ABRIR MODAL
 async function openModal(bird) {
     document.getElementById("modal-img").src = bird.image;
     document.getElementById("modal-title").innerText = bird.name;
     document.getElementById("modal-scientific").innerText = bird.scientific;
 
-    // carregar descrição
     const desc = await getBirdDescription(bird.scientific);
     document.getElementById("modal-description").innerText = desc;
 
-    // ativar modal
     modal.style.display = "flex";
 
-    // blur no fundo
     document.body.classList.add("blur-active");
 
-    // bloquear scroll
     document.body.style.overflow = "hidden";
 }
 
-
-// FECHAR MODAL
 function closeModal() {
     modal.style.display = "none";
 
-    // remover blur
     document.body.classList.remove("blur-active");
 
-    // liberar scroll
     document.body.style.overflow = "auto";
 }
 
 document.getElementById("close-modal").addEventListener("click", closeModal);
 
-// fechar clicando fora
 modal.addEventListener("click", (e) => {
     if (e.target === modal) {
         closeModal();
     }
 });
 
-/* ---------------------------
-   PESQUISA COM ENTER
---------------------------- */
 document.getElementById("searchInput").addEventListener("keypress", (event) => {
-    // Verifica se a tecla pressionada é 'Enter' (código 13)
     if (event.key === 'Enter') {
-        // Impede o comportamento padrão (como submeter um formulário e recarregar a página)
         event.preventDefault(); 
         
-        // Chama o evento de click do botão de busca
         document.getElementById("searchBtn").click(); 
     }
 });
